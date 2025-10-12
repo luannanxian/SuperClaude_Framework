@@ -1,6 +1,6 @@
 # SuperClaude Agents Guide 🤖
 
-SuperClaude provides 15 domain specialist agents that Claude Code can invoke for specialized expertise.
+SuperClaude provides 16 domain specialist agents that Claude Code can invoke for specialized expertise.
 
 
 ## 🧪 Testing Agent Activation
@@ -136,6 +136,78 @@ Task Analysis →
 ---
 
 ## The SuperClaude Agent Team 👥
+
+### Meta-Layer Agent 🎯
+
+### pm-agent 📚
+**Expertise**: Self-improvement workflow executor that documents implementations, analyzes mistakes, and maintains knowledge base continuously
+
+**Auto-Activation**:
+- **Post-Implementation**: After any task completion requiring documentation
+- **Mistake Detection**: Immediate analysis when errors or bugs occur
+- **Monthly Maintenance**: Regular documentation health reviews
+- **Knowledge Gap**: When patterns emerge requiring documentation
+- Commands: Automatically activates after `/sc:implement`, `/sc:build`, `/sc:improve` completions
+
+**Capabilities**:
+- **Implementation Documentation**: Record new patterns, architectural decisions, edge cases discovered
+- **Mistake Analysis**: Root cause analysis, prevention checklists, pattern identification
+- **Pattern Recognition**: Extract success patterns, anti-patterns, best practices
+- **Knowledge Maintenance**: Monthly reviews, noise reduction, duplication merging, freshness updates
+- **Self-Improvement Loop**: Transform every experience into reusable knowledge
+
+**How PM Agent Works** (Meta-Layer):
+1. **Specialist Agents Complete Task**: Backend-architect implements feature
+2. **PM Agent Auto-Activates**: After implementation completion
+3. **Documentation**: Records patterns, decisions, edge cases in docs/
+4. **Knowledge Update**: Updates CLAUDE.md if global pattern discovered
+5. **Evidence Collection**: Links test results, screenshots, metrics
+6. **Learning Integration**: Extracts lessons for future implementations
+
+**Self-Improvement Workflow Examples**:
+1. **Post-Implementation Documentation**:
+   - Scenario: Backend architect just implemented JWT authentication
+   - PM Agent: Analyzes implementation → Documents JWT pattern → Updates docs/authentication.md → Records security decisions → Creates evidence links
+   - Output: Comprehensive authentication pattern documentation for future reuse
+
+2. **Immediate Mistake Analysis**:
+   - Scenario: Direct Supabase import used (Kong Gateway bypassed)
+   - PM Agent: Stops implementation → Root cause analysis → Documents in self-improvement-workflow.md → Creates prevention checklist → Updates CLAUDE.md
+   - Output: Mistake recorded with prevention strategy, won't repeat error
+
+3. **Monthly Documentation Maintenance**:
+   - Scenario: Monthly review on 1st of month
+   - PM Agent: Reviews docs older than 6 months → Deletes unused documents → Merges duplicates → Updates version numbers → Reduces verbosity
+   - Output: Fresh, minimal, high-signal documentation maintained
+
+**Integration with Task Execution**:
+PM Agent operates as a **meta-layer** above specialist agents:
+```
+Task Flow:
+1. User Request → Auto-activation selects specialist agent
+2. Specialist Agent → Executes implementation (backend-architect, frontend-architect, etc.)
+3. PM Agent (Auto-triggered) → Documents learnings
+4. Knowledge Base → Updated with patterns, mistakes, improvements
+```
+
+**Works Best With**: All agents (documents their work, not replaces them)
+
+**Quality Standards**:
+- **Latest**: Last Verified dates on all documents
+- **Minimal**: Necessary information only, no verbosity
+- **Clear**: Concrete examples and copy-paste ready code
+- **Practical**: Immediately applicable to real work
+
+**Self-Improvement Loop Phases**:
+- **AFTER Phase**: Primary responsibility - document implementations, update docs/, create evidence
+- **MISTAKE RECOVERY**: Immediate stop, root cause analysis, documentation update
+- **MAINTENANCE**: Monthly pruning, merging, freshness updates, noise reduction
+
+**Verify**: Activates automatically after task completions requiring documentation
+**Test**: Should document patterns after backend-architect implements features
+**Check**: Should create prevention checklists when mistakes detected
+
+---
 
 ### Architecture & System Design Agents 🏗️
 

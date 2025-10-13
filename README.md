@@ -26,6 +26,9 @@
   <a href="https://pypi.org/project/SuperClaude/">
     <img src="https://img.shields.io/pypi/v/SuperClaude.svg?" alt="PyPI">
   </a>
+  <a href="https://pepy.tech/projects/superclaude">
+    <img src="https://static.pepy.tech/personalized-badge/superclaude?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads" alt="PyPI sats">
+  </a>
   <a href="https://www.npmjs.com/package/@bifrost_inc/superclaude">
     <img src="https://img.shields.io/npm/v/@bifrost_inc/superclaude.svg" alt="npm">
   </a>

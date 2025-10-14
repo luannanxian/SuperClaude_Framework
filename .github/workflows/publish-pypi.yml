@@ -69,7 +69,7 @@ jobs:
         pyproject_version = pyproject['project']['version']
         
         # Load package version
-        from SuperClaude import __version__
+        from superclaude import __version__
         
         print(f'pyproject.toml version: {pyproject_version}')
         print(f'Package version: {__version__}')

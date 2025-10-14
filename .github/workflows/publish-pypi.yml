@@ -52,7 +52,7 @@ jobs:
         echo "📦 Checking package structure..."
         ls -la
         echo "🔍 Checking SuperClaude package..."
-        ls -la SuperClaude/
+        ls -la superclaude/
         echo "🔍 Checking setup package..."
         ls -la setup/
         

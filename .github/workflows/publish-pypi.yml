@@ -160,7 +160,7 @@ jobs:
         
         # Test basic import
         python -c "
-        import SuperClaude
+        import superclaude
         print(f'✅ Successfully imported SuperClaude v{SuperClaude.__version__}')
         
         # Test CLI entry point

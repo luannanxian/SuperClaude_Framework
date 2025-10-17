@@ -1,5 +1,6 @@
 """
-Core component for SuperClaude framework files installation
+Framework documentation component for SuperClaude
+Manages core framework documentation files (CLAUDE.md, FLAGS.md, PRINCIPLES.md, etc.)
 """
 
 from typing import Dict, List, Tuple, Optional, Any
@@ -11,21 +12,28 @@ from ..services.claude_md import CLAUDEMdService
 from setup import __version__
 
 
-class CoreComponent(Component):
-    """Core SuperClaude framework files component"""
+class FrameworkDocsComponent(Component):
+    """SuperClaude framework documentation files component"""
 
     def __init__(self, install_dir: Optional[Path] = None):
-        """Initialize core component"""
+        """Initialize framework docs component"""
         super().__init__(install_dir)
 
     def get_metadata(self) -> Dict[str, str]:
         """Get component metadata"""
         return {
-            "name": "core",
+            "name": "framework_docs",
             "version": __version__,
-            "description": "SuperClaude framework documentation and core files",
-            "category": "core",
+            "description": "SuperClaude framework documentation (CLAUDE.md, FLAGS.md, PRINCIPLES.md, RULES.md, etc.)",
+            "category": "documentation",
         }
+
+    def is_reinstallable(self) -> bool:
+        """
+        Framework docs should always be updated to latest version.
+        SuperClaude-related documentation should always overwrite existing files.
+        """
+        return True
 
     def get_metadata_modifications(self) -> Dict[str, Any]:
         """Get metadata modifications for SuperClaude"""
@@ -35,7 +43,7 @@ class CoreComponent(Component):
                 "name": "superclaude",
                 "description": "AI-enhanced development framework for Claude Code",
                 "installation_type": "global",
-                "components": ["core"],
+                "components": ["framework_docs"],
             },
             "superclaude": {
                 "enabled": True,
@@ -46,8 +54,8 @@ class CoreComponent(Component):
         }
 
     def _install(self, config: Dict[str, Any]) -> bool:
-        """Install core component"""
-        self.logger.info("Installing SuperClaude core framework files...")
+        """Install framework docs component"""
+        self.logger.info("Installing SuperClaude framework documentation...")
 
         return super()._install(config)
 
@@ -58,17 +66,18 @@ class CoreComponent(Component):
             self.settings_manager.update_metadata(metadata_mods)
             self.logger.info("Updated metadata with framework configuration")
 
-            # Add component registration to metadata
+            # Add component registration to metadata (with file list for sync)
             self.settings_manager.add_component_registration(
-                "core",
+                "framework_docs",
                 {
                     "version": __version__,
-                    "category": "core",
+                    "category": "documentation",
                     "files_count": len(self.component_files),
+                    "files": list(self.component_files),  # Track for sync/deletion
                 },
             )
 
-            self.logger.info("Updated metadata with core component registration")
+            self.logger.info("Updated metadata with framework docs component registration")
 
             # Migrate any existing SuperClaude data from settings.json
             if self.settings_manager.migrate_superclaude_data():
@@ -86,23 +95,23 @@ class CoreComponent(Component):
             if not self.file_manager.ensure_directory(dir_path):
                 self.logger.warning(f"Could not create directory: {dir_path}")
 
-        # Update CLAUDE.md with core framework imports
+        # Update CLAUDE.md with framework documentation imports
         try:
             manager = CLAUDEMdService(self.install_dir)
-            manager.add_imports(self.component_files, category="Core Framework")
-            self.logger.info("Updated CLAUDE.md with core framework imports")
+            manager.add_imports(self.component_files, category="Framework Documentation")
+            self.logger.info("Updated CLAUDE.md with framework documentation imports")
         except Exception as e:
             self.logger.warning(
-                f"Failed to update CLAUDE.md with core framework imports: {e}"
+                f"Failed to update CLAUDE.md with framework documentation imports: {e}"
             )
             # Don't fail the whole installation for this
 
         return True
 
     def uninstall(self) -> bool:
-        """Uninstall core component"""
+        """Uninstall framework docs component"""
         try:
-            self.logger.info("Uninstalling SuperClaude core component...")
+            self.logger.info("Uninstalling SuperClaude framework docs component...")
 
             # Remove framework files
             removed_count = 0
@@ -114,10 +123,10 @@ class CoreComponent(Component):
                 else:
                     self.logger.warning(f"Could not remove {filename}")
 
-            # Update metadata to remove core component
+            # Update metadata to remove framework docs component
             try:
-                if self.settings_manager.is_component_installed("core"):
-                    self.settings_manager.remove_component_registration("core")
+                if self.settings_manager.is_component_installed("framework_docs"):
+                    self.settings_manager.remove_component_registration("framework_docs")
                     metadata_mods = self.get_metadata_modifications()
                     metadata = self.settings_manager.load_metadata()
                     for key in metadata_mods.keys():
@@ -125,83 +134,86 @@ class CoreComponent(Component):
                             del metadata[key]
 
                     self.settings_manager.save_metadata(metadata)
-                    self.logger.info("Removed core component from metadata")
+                    self.logger.info("Removed framework docs component from metadata")
             except Exception as e:
                 self.logger.warning(f"Could not update metadata: {e}")
 
             self.logger.success(
-                f"Core component uninstalled ({removed_count} files removed)"
+                f"Framework docs component uninstalled ({removed_count} files removed)"
             )
             return True
 
         except Exception as e:
-            self.logger.exception(f"Unexpected error during core uninstallation: {e}")
+            self.logger.exception(f"Unexpected error during framework docs uninstallation: {e}")
             return False
 
     def get_dependencies(self) -> List[str]:
-        """Get component dependencies (core has none)"""
+        """Get component dependencies (framework docs has none)"""
         return []
 
     def update(self, config: Dict[str, Any]) -> bool:
-        """Update core component"""
+        """
+        Sync framework docs component (overwrite + delete obsolete files).
+        No backup needed - SuperClaude source files are always authoritative.
+        """
         try:
-            self.logger.info("Updating SuperClaude core component...")
+            self.logger.info("Syncing SuperClaude framework docs component...")
 
-            # Check current version
-            current_version = self.settings_manager.get_component_version("core")
-            target_version = self.get_metadata()["version"]
-
-            if current_version == target_version:
-                self.logger.info(f"Core component already at version {target_version}")
-                return True
-
-            self.logger.info(
-                f"Updating core component from {current_version} to {target_version}"
+            # Get previously installed files from metadata
+            metadata = self.settings_manager.load_metadata()
+            previous_files = set(
+                metadata.get("components", {})
+                .get("framework_docs", {})
+                .get("files", [])
             )
 
-            # Create backup of existing files
-            backup_files = []
-            for filename in self.component_files:
+            # Get current files from source
+            current_files = set(self.component_files)
+
+            # Files to delete (were installed before, but no longer in source)
+            files_to_delete = previous_files - current_files
+
+            # Delete obsolete files
+            deleted_count = 0
+            for filename in files_to_delete:
                 file_path = self.install_dir / filename
                 if file_path.exists():
-                    backup_path = self.file_manager.backup_file(file_path)
-                    if backup_path:
-                        backup_files.append(backup_path)
-                        self.logger.debug(f"Backed up {filename}")
+                    try:
+                        file_path.unlink()
+                        deleted_count += 1
+                        self.logger.info(f"Deleted obsolete file: {filename}")
+                    except Exception as e:
+                        self.logger.warning(f"Could not delete {filename}: {e}")
 
-            # Perform installation (overwrites existing files)
+            # Install/overwrite current files (no backup)
             success = self.install(config)
 
             if success:
-                # Remove backup files on successful update
-                for backup_path in backup_files:
-                    try:
-                        backup_path.unlink()
-                    except Exception:
-                        pass  # Ignore cleanup errors
+                # Update metadata with current file list
+                self.settings_manager.add_component_registration(
+                    "framework_docs",
+                    {
+                        "version": __version__,
+                        "category": "documentation",
+                        "files_count": len(current_files),
+                        "files": list(current_files),  # Track installed files
+                    },
+                )
 
                 self.logger.success(
-                    f"Core component updated to version {target_version}"
+                    f"Framework docs synced: {len(current_files)} files, {deleted_count} obsolete files removed"
                 )
             else:
-                # Restore from backup on failure
-                self.logger.warning("Update failed, restoring from backup...")
-                for backup_path in backup_files:
-                    try:
-                        original_path = backup_path.with_suffix("")
-                        shutil.move(str(backup_path), str(original_path))
-                        self.logger.debug(f"Restored {original_path.name}")
-                    except Exception as e:
-                        self.logger.error(f"Could not restore {backup_path}: {e}")
+                self.logger.error("Framework docs sync failed")
 
             return success
 
         except Exception as e:
-            self.logger.exception(f"Unexpected error during core update: {e}")
+            self.logger.exception(f"Unexpected error during framework docs sync: {e}")
             return False
 
     def validate_installation(self) -> Tuple[bool, List[str]]:
-        """Validate core component installation"""
+        """Validate framework docs component installation"""
         errors = []
 
         # Check if all framework files exist
@@ -213,11 +225,11 @@ class CoreComponent(Component):
                 errors.append(f"Framework file is not a regular file: {filename}")
 
         # Check metadata registration
-        if not self.settings_manager.is_component_installed("core"):
-            errors.append("Core component not registered in metadata")
+        if not self.settings_manager.is_component_installed("framework_docs"):
+            errors.append("Framework docs component not registered in metadata")
         else:
             # Check version matches
-            installed_version = self.settings_manager.get_component_version("core")
+            installed_version = self.settings_manager.get_component_version("framework_docs")
             expected_version = self.get_metadata()["version"]
             if installed_version != expected_version:
                 errors.append(
@@ -240,9 +252,9 @@ class CoreComponent(Component):
         return len(errors) == 0, errors
 
     def _get_source_dir(self):
-        """Get source directory for framework files"""
-        # Assume we're in superclaude/setup/components/core.py
-        # and framework files are in superclaude/superclaude/Core/
+        """Get source directory for framework documentation files"""
+        # Assume we're in superclaude/setup/components/framework_docs.py
+        # and framework files are in superclaude/superclaude/core/
         project_root = Path(__file__).parent.parent.parent
         return project_root / "superclaude" / "core"
 

@@ -80,6 +80,12 @@ Examples:
         help="Run system diagnostics and show installation help",
     )
 
+    parser.add_argument(
+        "--legacy",
+        action="store_true",
+        help="Use legacy mode: install individual official MCP servers instead of unified gateway",
+    )
+
     return parser
 
 
@@ -132,12 +138,12 @@ def get_components_to_install(
     # Explicit components specified
     if args.components:
         if "all" in args.components:
-            components = ["core", "commands", "agents", "modes", "mcp", "mcp_docs"]
+            components = ["framework_docs", "commands", "agents", "modes", "mcp"]
         else:
             components = args.components
 
-        # If mcp or mcp_docs is specified non-interactively, we should still ask which servers to install.
-        if "mcp" in components or "mcp_docs" in components:
+        # If mcp is specified, handle MCP server selection
+        if "mcp" in components and not args.yes:
             selected_servers = select_mcp_servers(registry)
             if not hasattr(config_manager, "_installation_context"):
                 config_manager._installation_context = {}
@@ -145,25 +151,15 @@ def get_components_to_install(
                 selected_servers
             )
 
-            # If the user selected some servers, ensure both mcp and mcp_docs are included
+            # If the user selected some servers, ensure mcp is included
             if selected_servers:
                 if "mcp" not in components:
                     components.append("mcp")
                     logger.debug(
                         f"Auto-added 'mcp' component for selected servers: {selected_servers}"
                     )
-                if "mcp_docs" not in components:
-                    components.append("mcp_docs")
-                    logger.debug(
-                        f"Auto-added 'mcp_docs' component for selected servers: {selected_servers}"
-                    )
 
                 logger.info(f"Final components to install: {components}")
-
-            # If mcp_docs was explicitly requested but no servers selected, allow auto-detection
-            elif not selected_servers and "mcp_docs" in components:
-                logger.info("mcp_docs component will auto-detect existing MCP servers")
-                logger.info("Documentation will be installed for any detected servers")
 
         return components
 
@@ -221,7 +217,7 @@ def select_mcp_servers(registry: ComponentRegistry) -> List[str]:
     try:
         # Get MCP component to access server list
         mcp_instance = registry.get_component_instance(
-            "mcp", get_home_directory() / ".claude"
+            "mcp", DEFAULT_INSTALL_DIR
         )
         if not mcp_instance or not hasattr(mcp_instance, "mcp_servers"):
             logger.error("Could not access MCP server information")
@@ -306,7 +302,7 @@ def select_framework_components(
 
     try:
         # Framework components (excluding MCP-related ones)
-        framework_components = ["core", "modes", "commands", "agents"]
+        framework_components = ["framework_docs", "modes", "commands", "agents"]
 
         # Create component menu
         component_options = []
@@ -319,16 +315,7 @@ def select_framework_components(
                 component_options.append(f"{component_name} - {description}")
                 component_info[component_name] = metadata
 
-        # Add MCP documentation option
-        if selected_mcp_servers:
-            mcp_docs_desc = f"MCP documentation for {', '.join(selected_mcp_servers)} (auto-selected)"
-            component_options.append(f"mcp_docs - {mcp_docs_desc}")
-            auto_selected_mcp_docs = True
-        else:
-            component_options.append(
-                "mcp_docs - MCP server documentation (none selected)"
-            )
-            auto_selected_mcp_docs = False
+        # MCP documentation is integrated into airis-mcp-gateway, no separate component needed
 
         print(f"\n{Colors.CYAN}{Colors.BRIGHT}{'='*51}{Colors.RESET}")
         print(
@@ -347,25 +334,16 @@ def select_framework_components(
         selections = menu.display()
 
         if not selections:
-            # Default to core if nothing selected
-            logger.info("No components selected, defaulting to core")
-            selected_components = ["core"]
+            # Default to framework_docs if nothing selected
+            logger.info("No components selected, defaulting to framework_docs")
+            selected_components = ["framework_docs"]
         else:
             selected_components = []
-            all_components = framework_components + ["mcp_docs"]
+            all_components = framework_components
 
             for i in selections:
                 if i < len(all_components):
                     selected_components.append(all_components[i])
-
-        # Auto-select MCP docs if not explicitly deselected and we have MCP servers
-        if auto_selected_mcp_docs and "mcp_docs" not in selected_components:
-            # Check if user explicitly deselected it
-            mcp_docs_index = len(framework_components)  # Index of mcp_docs in the menu
-            if mcp_docs_index not in selections:
-                # User didn't select it, but we auto-select it
-                selected_components.append("mcp_docs")
-                logger.info("Auto-selected MCP documentation for configured servers")
 
         # Always include MCP component if servers were selected
         if selected_mcp_servers and "mcp" not in selected_components:
@@ -376,7 +354,7 @@ def select_framework_components(
 
     except Exception as e:
         logger.error(f"Error in framework component selection: {e}")
-        return ["core"]  # Fallback to core
+        return ["framework_docs"]  # Fallback to framework_docs
 
 
 def interactive_component_selection(
@@ -564,6 +542,7 @@ def perform_installation(
             "force": args.force,
             "backup": not args.no_backup,
             "dry_run": args.dry_run,
+            "legacy_mode": getattr(args, "legacy", False),
             "selected_mcp_servers": getattr(
                 config_manager, "_installation_context", {}
             ).get("selected_mcp_servers", []),
@@ -593,9 +572,6 @@ def perform_installation(
             summary = installer.get_installation_summary()
             if summary["installed"]:
                 logger.info(f"Installed components: {', '.join(summary['installed'])}")
-
-            if summary["backup_path"]:
-                logger.info(f"Backup created: {summary['backup_path']}")
 
         else:
             logger.error(

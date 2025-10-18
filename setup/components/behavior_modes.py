@@ -1,5 +1,8 @@
 """
-Modes component for SuperClaude behavioral modes
+Behavior Modes Component
+
+Responsibility: Defines and manages execution modes for Claude behavior.
+Controls how Claude responds to different contexts and user intent.
 """
 
 from typing import Dict, List, Tuple, Optional, Any
@@ -10,12 +13,12 @@ from setup import __version__
 from ..services.claude_md import CLAUDEMdService
 
 
-class ModesComponent(Component):
+class BehaviorModesComponent(Component):
     """SuperClaude behavioral modes component"""
 
     def __init__(self, install_dir: Optional[Path] = None):
         """Initialize modes component"""
-        super().__init__(install_dir, Path(""))
+        super().__init__(install_dir, Path("modes"))
 
     def get_metadata(self) -> Dict[str, str]:
         """Get component metadata"""
@@ -91,10 +94,11 @@ class ModesComponent(Component):
             self.settings_manager.update_metadata(metadata_mods)
             self.logger.info("Updated metadata with modes component registration")
 
-            # Update CLAUDE.md with mode imports
+            # Update CLAUDE.md with mode imports (include modes/ prefix)
             try:
                 manager = CLAUDEMdService(self.install_dir)
-                manager.add_imports(self.component_files, category="Behavioral Modes")
+                mode_files_with_path = [f"modes/{f}" for f in self.component_files]
+                manager.add_imports(mode_files_with_path, category="Behavioral Modes")
                 self.logger.info("Updated CLAUDE.md with mode imports")
             except Exception as e:
                 self.logger.warning(
@@ -148,7 +152,7 @@ class ModesComponent(Component):
 
     def get_dependencies(self) -> List[str]:
         """Get dependencies"""
-        return ["framework_docs"]
+        return ["knowledge_base"]
 
     def update(self, config: Dict[str, Any]) -> bool:
         """
